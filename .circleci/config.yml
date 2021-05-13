@@ -10,11 +10,14 @@ orbs:
 
 jobs:
   build:
-    machine: true
+    docker:
+      - image: circleci/node:15
     environment:
       DOCKER_HOST: ssh://root@oskarlindgren.se
     steps:
       - checkout
+      - setup_remote_docker:
+          version: 19.03.13
       - run: docker build -t photo-file-server .
 
 workflows:
