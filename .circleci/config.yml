@@ -14,9 +14,7 @@ jobs:
     environment:
       DOCKER_HOST: "ssh://root@oskarlindgren.se"
     steps:
-      - setup_remote_docker:
-          version: 19.03.13
-
+      - checkout
       - run: docker build -t photo-file-server .
 
 workflows:
