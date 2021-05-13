@@ -12,7 +12,7 @@ jobs:
   build:
     machine: true
     environment:
-      DOCKER_HOST: "ssh://root@oskarlindgren.se"
+      DOCKER_HOST: ssh://root@oskarlindgren.se
     steps:
       - checkout
       - run: docker build -t photo-file-server .
