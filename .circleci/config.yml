@@ -18,7 +18,7 @@ jobs:
       - checkout
       - setup_remote_docker:
           version: 19.03.13
-      - run: docker build -t photo-file-server .
+      - run: docker -H ssh://root@oskarlindgren.se build -t photo-file-server .
 
 workflows:
   # Below is the definition of your workflow.
