@@ -1,0 +1,8 @@
+# MacOs
+.DS_Store
+
+# Local Volume
+files/
+
+# VSCodium
+.vscode
