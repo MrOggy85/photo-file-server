@@ -13,6 +13,9 @@ on:
     branches: [master]
   pull_request:
     branches: [master]
+    
+env:
+  DOCKER_HOST: ssh://root@oskarlindgren.se
 
 jobs:
   test:
@@ -31,4 +34,4 @@ jobs:
         run: deno cache deps.ts
 
       - name: Deploy
-        run: DOCKER_HOST=ssh://root@oskarlindgren.se docker build -t deno-file-server .
+        run: docker build -t deno-file-server .
