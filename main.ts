@@ -1,6 +1,6 @@
 import { serve } from "./deps.ts";
 
-const SKIP_LIST = [".DS_Store"];
+const SKIP_LIST = [".DS_Store", ".stfolder"];
 
 const server = serve({ port: 3000 });
 console.log(`HTTP webserver running.  Access it at:  http://localhost:3000/`);
