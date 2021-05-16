@@ -101,8 +101,6 @@ for await (const request of server) {
       break;
   }
 
-  await listAlbums();
-
   let bodyContent = "Your user-agent is:\n\n";
   bodyContent += request.headers.get("user-agent") || "Unknown";
 
