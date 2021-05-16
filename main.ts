@@ -35,9 +35,9 @@ async function getPhoto(albumName: string, photoName: string) {
 for await (const request of server) {
   console.log(`${request.method} ${request.url}`);
 
-  const head = new Headers();
-  head.set("Access-Control-Allow-Origin", "*");
-  head.set("Access-Control-Request-Headers", "GET");
+  const headers = new Headers();
+  headers.set("Access-Control-Allow-Origin", "*");
+  headers.set("Access-Control-Request-Headers", "GET");
 
   const path = request.url.split("/");
   const mainRoute = path[1];
@@ -45,22 +45,22 @@ for await (const request of server) {
   switch (mainRoute.toLowerCase()) {
     case "list": {
       const albums = await listAlbums();
-      request.respond({ status: 200, body: JSON.stringify(albums) });
+      request.respond({ headers, status: 200, body: JSON.stringify(albums) });
       continue;
     }
 
     case "album": {
       const name = path[2];
       if (!name) {
-        request.respond({ status: 400, body: "no album name in path" });
+        request.respond({ headers, status: 400, body: "no album name in path" });
         continue;
       }
       try {
         const photos = await listPhotos(name);
-        request.respond({ status: 200, body: JSON.stringify(photos) });
+        request.respond({ headers, status: 200, body: JSON.stringify(photos) });
       } catch (error) {
         console.log("error", error);
-        request.respond({ status: 404, body: "no album with that name" });
+        request.respond({ headers, status: 404, body: "no album with that name" });
       }
       continue;
     }
@@ -68,12 +68,12 @@ for await (const request of server) {
     case "photo": {
       const album = path[2];
       if (!album) {
-        request.respond({ status: 400, body: "no album name in path" });
+        request.respond({ headers, status: 400, body: "no album name in path" });
         continue;
       }
       const photo = path[3];
       if (!photo) {
-        request.respond({ status: 400, body: "no photo name in path" });
+        request.respond({ headers, status: 400, body: "no photo name in path" });
         continue;
       }
 
@@ -82,12 +82,12 @@ for await (const request of server) {
 
         const photoParts = photo.split(".");
         const imageType = photoParts[photoParts.length - 1];
-        head.set("content-type", `image/${imageType}`);
+        headers.set("content-type", `image/${imageType}`);
 
-        request.respond({ headers: head, body: img, status: 200 });
+        request.respond({ headers, body: img, status: 200 });
       } catch (error) {
         console.log("error", error);
-        request.respond({ status: 404, body: "photo not found" });
+        request.respond({ headers, status: 404, body: "photo not found" });
       }
       continue;
     }
