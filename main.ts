@@ -16,7 +16,9 @@ async function listAlbums() {
   return albums;
 }
 
-async function listPhotos(albumName: string) {
+async function listPhotos(albumNameRaw: string) {
+  const albumName = albumNameRaw.replaceAll('%20', ' ');
+
   const photos: string[] = [];
   for await (const dirEntry of Deno.readDir(`files/${albumName}`)) {
     if (SKIP_LIST.includes(dirEntry.name)) {
@@ -27,7 +29,9 @@ async function listPhotos(albumName: string) {
   return photos;
 }
 
-async function getPhoto(albumName: string, photoName: string) {
+async function getPhoto(albumNameRaw: string, photoNameRaw: string) {
+  const albumName = albumNameRaw.replaceAll('%20', ' ');
+  const photoName = photoNameRaw.replaceAll('%20', ' ');
   const img = await Deno.readFile(`files/${albumName}/${photoName}`);
   return img;
 }
