@@ -35,6 +35,10 @@ async function getPhoto(albumName: string, photoName: string) {
 for await (const request of server) {
   console.log(`${request.method} ${request.url}`);
 
+  const head = new Headers();
+  head.set("Access-Control-Allow-Origin", "*");
+  head.set("Access-Control-Request-Headers", "GET");
+
   const path = request.url.split("/");
   const mainRoute = path[1];
 
@@ -76,7 +80,6 @@ for await (const request of server) {
       try {
         const img = await getPhoto(album, photo);
 
-        const head = new Headers();
         const photoParts = photo.split(".");
         const imageType = photoParts[photoParts.length - 1];
         head.set("content-type", `image/${imageType}`);
