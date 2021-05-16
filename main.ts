@@ -87,6 +87,7 @@ for await (const request of server) {
         const photoParts = photo.split(".");
         const imageType = photoParts[photoParts.length - 1];
         headers.set("content-type", `image/${imageType}`);
+        headers.set("cache-control", "max-age=31536000");
 
         request.respond({ headers, body: img, status: 200 });
       } catch (error) {
