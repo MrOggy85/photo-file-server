@@ -6,14 +6,28 @@ const server = serve({ port: 3000 });
 console.log(`HTTP webserver running.  Access it at:  http://localhost:3000/`);
 
 async function listAlbums() {
-  const albums: string[] = [];
+  const albums: {
+    name: string;
+    creationDate: Date;
+  }[] = [];
+
   for await (const dirEntry of Deno.readDir("files")) {
     if (SKIP_LIST.includes(dirEntry.name)) {
       continue;
     }
-    albums.push(dirEntry.name);
+    const birthtime = Deno.statSync(`files/${dirEntry.name}`).birthtime ||
+      new Date();
+
+    albums.push({
+      name: dirEntry.name,
+      creationDate: birthtime,
+    });
   }
-  return albums;
+
+  return albums.sort((a, b) => {
+    return a.creationDate > b.creationDate ? -1 : 1;
+  })
+    .map((x) => x.name);
 }
 
 async function listPhotos(albumNameRaw: string) {
