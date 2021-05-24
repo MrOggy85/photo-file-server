@@ -1,4 +1,4 @@
-import { serve } from "./deps.ts";
+import { Image, serve } from "./deps.ts";
 
 const SKIP_LIST = [".DS_Store", ".stfolder"];
 
@@ -46,8 +46,14 @@ async function listPhotos(albumNameRaw: string) {
 async function getPhoto(albumNameRaw: string, photoNameRaw: string) {
   const albumName = decodeURIComponent(albumNameRaw);
   const photoName = photoNameRaw.replaceAll("%20", " ");
-  const img = await Deno.readFile(`files/${albumName}/${photoName}`);
-  return img;
+  const imageAsText = await Deno.readFile(`files/${albumName}/${photoName}`);
+
+  const image = await Image.decode(imageAsText);
+
+  const resizedImage = image.resize(image.width / 3, Image.RESIZE_AUTO);
+  const encodedJpeg = await resizedImage.encodeJPEG(85);
+
+  return encodedJpeg;
 }
 
 for await (const request of server) {
