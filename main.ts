@@ -57,8 +57,8 @@ async function getPhoto(albumNameRaw: string, photoNameRaw: string) {
 }
 
 for await (const request of server) {
-  const headers = new Headers();
   try {
+    const headers = new Headers();
     console.log(`${request.method} ${request.url}`);
 
     headers.set("Access-Control-Allow-Origin", "*");
@@ -69,8 +69,21 @@ for await (const request of server) {
 
     switch (mainRoute.toLowerCase()) {
       case "list": {
-        const albums = await listAlbums();
-        request.respond({ headers, status: 200, body: JSON.stringify(albums) });
+        try {
+          const albums = await listAlbums();
+          request.respond({
+            headers,
+            status: 200,
+            body: JSON.stringify(albums),
+          });
+        } catch (error) {
+          console.log(error);
+          request.respond({
+            headers,
+            status: 500,
+            body: error.message,
+          });
+        }
         continue;
       }
 
@@ -92,7 +105,7 @@ for await (const request of server) {
             body: JSON.stringify(photos),
           });
         } catch (error) {
-          console.log("error", error);
+          console.log(error);
           request.respond({
             headers,
             status: 404,
@@ -147,6 +160,7 @@ for await (const request of server) {
 
     request.respond({ status: 200, body: bodyContent });
   } catch (error) {
-    request.respond({ headers, status: 500, body: error });
+    // request.respond({ headers, status: 500, body: error });
+    console.log(error);
   }
 }
