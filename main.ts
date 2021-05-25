@@ -1,9 +1,6 @@
-import { Image, serve } from "./deps.ts";
+import { Image } from "./deps.ts";
 
 const SKIP_LIST = [".DS_Store", ".stfolder"];
-
-const server = serve({ port: 3000 });
-console.log(`HTTP webserver running.  Access it at:  http://localhost:3000/`);
 
 async function listAlbums() {
   const albums: {
@@ -56,114 +53,143 @@ async function getPhoto(albumNameRaw: string, photoNameRaw: string) {
   return encodedJpeg;
 }
 
-while (true) {
-  try {
-    for await (const request of server) {
-      const headers = new Headers();
-      console.log(
-        `${request.conn.remoteAddr} ${request.method} ${request.url}`,
-      );
+try {
+  console.log(`HTTP webserver running.  Access it at:  http://localhost:3000/`);
+  for await (const conn of Deno.listen({ port: 3000 })) {
+    (async () => {
+      try {
+        for await (const { request, respondWith } of Deno.serveHttp(conn)) {
+          const headers = new Headers();
+          console.log(
+            `${request.method} ${request.url}`,
+          );
 
-      headers.set("Access-Control-Allow-Origin", "*");
-      headers.set("Access-Control-Request-Headers", "GET");
+          headers.set("Access-Control-Allow-Origin", "*");
+          headers.set("Access-Control-Request-Headers", "GET");
 
-      const path = request.url.split("/");
-      const mainRoute = path[1];
+          const path = request.url.split("//")[1].split("/");
+          const mainRoute = path[1];
 
-      switch (mainRoute.toLowerCase()) {
-        case "list": {
-          try {
-            const albums = await listAlbums();
-            request.respond({
+          switch (mainRoute.toLowerCase()) {
+            case "list": {
+              try {
+                const albums = await listAlbums();
+                await respondWith(
+                  new Response(JSON.stringify(albums), {
+                    headers,
+                    status: 200,
+                  }),
+                );
+              } catch (error) {
+                console.log(error);
+                await respondWith(
+                  new Response(JSON.stringify(error.message), {
+                    headers,
+                    status: 500,
+                  }),
+                );
+              }
+              continue;
+            }
+
+            case "album": {
+              const name = path[2];
+              if (!name) {
+                await respondWith(
+                  new Response("no album name in path", {
+                    headers,
+                    status: 400,
+                  }),
+                );
+                continue;
+              }
+              try {
+                const photos = await listPhotos(name);
+                await respondWith(
+                  new Response(JSON.stringify(photos), {
+                    headers,
+                    status: 200,
+                  }),
+                );
+              } catch (error) {
+                console.log(error);
+                await respondWith(
+                  new Response("no album with that name", {
+                    headers,
+                    status: 404,
+                  }),
+                );
+              }
+              continue;
+            }
+
+            case "photo": {
+              const album = path[2];
+              if (!album) {
+                await respondWith(
+                  new Response("no album name in path", {
+                    headers,
+                    status: 400,
+                  }),
+                );
+                continue;
+              }
+              const photo = path[3];
+              if (!photo) {
+                await respondWith(
+                  new Response("no photo name in path", {
+                    headers,
+                    status: 400,
+                  }),
+                );
+                continue;
+              }
+
+              try {
+                const img = await getPhoto(album, photo);
+
+                const photoParts = photo.split(".");
+                const imageType = photoParts[photoParts.length - 1];
+                headers.set("content-type", `image/${imageType}`);
+                headers.set("cache-control", "max-age=31536000");
+
+                await respondWith(
+                  new Response(img, {
+                    headers,
+                    status: 200,
+                  }),
+                );
+              } catch (error) {
+                console.log("error", error);
+                await respondWith(
+                  new Response(error.message, {
+                    headers,
+                    status: 500,
+                  }),
+                );
+              }
+              continue;
+            }
+
+            default:
+              break;
+          }
+
+          let bodyContent = "Your user-agent is:\n\n";
+          bodyContent += request.headers.get("user-agent") || "Unknown";
+
+          await respondWith(
+            new Response(bodyContent, {
               headers,
               status: 200,
-              body: JSON.stringify(albums),
-            });
-          } catch (error) {
-            console.log(error);
-            request.respond({
-              headers,
-              status: 500,
-              body: error.message,
-            });
-          }
-          continue;
+            }),
+          );
         }
-
-        case "album": {
-          const name = path[2];
-          if (!name) {
-            request.respond({
-              headers,
-              status: 400,
-              body: "no album name in path",
-            });
-            continue;
-          }
-          try {
-            const photos = await listPhotos(name);
-            request.respond({
-              headers,
-              status: 200,
-              body: JSON.stringify(photos),
-            });
-          } catch (error) {
-            console.log(error);
-            request.respond({
-              headers,
-              status: 404,
-              body: "no album with that name",
-            });
-          }
-          continue;
-        }
-
-        case "photo": {
-          const album = path[2];
-          if (!album) {
-            request.respond({
-              headers,
-              status: 400,
-              body: "no album name in path",
-            });
-            continue;
-          }
-          const photo = path[3];
-          if (!photo) {
-            request.respond({
-              headers,
-              status: 400,
-              body: "no photo name in path",
-            });
-            continue;
-          }
-
-          try {
-            const img = await getPhoto(album, photo);
-
-            const photoParts = photo.split(".");
-            const imageType = photoParts[photoParts.length - 1];
-            headers.set("content-type", `image/${imageType}`);
-            headers.set("cache-control", "max-age=31536000");
-
-            request.respond({ headers, body: img, status: 200 });
-          } catch (error) {
-            console.log("error", error);
-            request.respond({ headers, status: 404, body: "photo not found" });
-          }
-          continue;
-        }
-
-        default:
-          break;
+      } catch (error) {
+        console.log("main Error", error);
       }
-
-      let bodyContent = "Your user-agent is:\n\n";
-      bodyContent += request.headers.get("user-agent") || "Unknown";
-
-      request.respond({ status: 200, body: bodyContent });
-    }
-  } catch (error) {
-    console.log(error);
+    })();
   }
+} catch (error) {
+  console.log("super Error", error);
 }
