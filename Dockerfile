@@ -16,6 +16,6 @@ ADD deps.ts .
 ADD main.ts .
 ADD start.sh .
 # Compile the main app so that it doesn't need to be compiled each startup/entry.
-RUN deno cache main.ts
+RUN deno --unstable cache main.ts
 
 CMD ["bash", "./start.sh"]
