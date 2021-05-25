@@ -1,4 +1,4 @@
-FROM hayd/deno:ubuntu-1.9.2
+FROM hayd/deno:ubuntu-1.10.2
 
 EXPOSE 3000
 
