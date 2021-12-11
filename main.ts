@@ -40,7 +40,15 @@ async function listPhotos(albumNameRaw: string) {
   return photos;
 }
 
+const photoCache: Record<string, Uint8Array> = {}
+
 async function getPhoto(albumNameRaw: string, photoNameRaw: string) {
+  const cacheKey = `${albumNameRaw}-${photoNameRaw}`;
+  const cache = photoCache[cacheKey]
+  if (cache) {
+    return cache;
+  }
+
   const albumName = decodeURIComponent(albumNameRaw);
   const photoName = photoNameRaw.replaceAll("%20", " ");
   const imageAsText = await Deno.readFile(`files/${albumName}/${photoName}`);
@@ -49,6 +57,8 @@ async function getPhoto(albumNameRaw: string, photoNameRaw: string) {
 
   const resizedImage = image.resize(image.width / 3, Image.RESIZE_AUTO);
   const encodedJpeg = await resizedImage.encodeJPEG(85);
+
+  photoCache[cacheKey] = encodedJpeg;
 
   return encodedJpeg;
 }
