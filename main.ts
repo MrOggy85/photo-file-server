@@ -27,30 +27,49 @@ async function listAlbums() {
     .map((x) => x.name);
 }
 
+type Photo = {
+  url: string;
+  width: number;
+  height: number;
+  alt: string;
+}
+
 async function listPhotos(albumNameRaw: string) {
   const albumName = decodeURIComponent(albumNameRaw);
 
-  const photos: string[] = [];
+  const photos: Photo[] = [];
   for await (const dirEntry of Deno.readDir(`files/${albumName}`)) {
     if (SKIP_LIST.includes(dirEntry.name)) {
       continue;
     }
-    photos.push(dirEntry.name);
+
+    const imageAsText = await getPhoto(albumName, dirEntry.name);
+    const image = await Image.decode(imageAsText);
+
+    photos.push({
+      url: dirEntry.name,
+      width: image.width,
+      height: image.height,
+      alt: dirEntry.name.split('.')[0] || '',
+    });
   }
   return photos;
 }
 
+
+
 const photoCache: Record<string, Uint8Array> = {}
 
 async function getPhoto(albumNameRaw: string, photoNameRaw: string) {
-  const cacheKey = `${albumNameRaw}-${photoNameRaw}`;
+  const albumName = decodeURIComponent(albumNameRaw);
+  const photoName = photoNameRaw.replaceAll("%20", " ");
+
+  const cacheKey = `${albumName}-${photoName}`;
   const cache = photoCache[cacheKey]
   if (cache) {
     return cache;
   }
 
-  const albumName = decodeURIComponent(albumNameRaw);
-  const photoName = photoNameRaw.replaceAll("%20", " ");
   const imageAsText = await Deno.readFile(`files/${albumName}/${photoName}`);
 
   const image = await Image.decode(imageAsText);
@@ -64,11 +83,12 @@ async function getPhoto(albumNameRaw: string, photoNameRaw: string) {
 }
 
 try {
-  console.log(`HTTP webserver running.  Access it at:  http://localhost:3000/`);
-  for await (const conn of Deno.listen({ port: 3000 })) {
+  console.log(`HTTP webserver running. Access it at:  http://localhost:3001/`);
+  for await (const conn of Deno.listen({ port: 3001 })) {
     (async () => {
       try {
         for await (const { request, respondWith } of Deno.serveHttp(conn)) {
+
           const headers = new Headers();
           console.log(
             `${request.method} ${request.url}`,
