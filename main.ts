@@ -1,6 +1,21 @@
-import { Image } from "./deps.ts";
+const SKIP_LIST = [".DS_Store", ".stfolder", ".stfolder/"];
 
-const SKIP_LIST = [".DS_Store", ".stfolder"];
+const BASE_URL = "https://photo-blog.oskarlindgren.se";
+
+function getParts(row: string) {
+  const parts = row.split("|");
+  const url = parts[0].trim();
+  const name = parts[1].trim();
+  const isDir = parts[2].trim() === "true";
+  const date = parts[3].trim();
+
+  return {
+    url,
+    name,
+    isDir,
+    date,
+  };
+}
 
 async function listAlbums() {
   const albums: {
@@ -8,18 +23,24 @@ async function listAlbums() {
     creationDate: Date;
   }[] = [];
 
-  for await (const dirEntry of Deno.readDir("files")) {
-    if (SKIP_LIST.includes(dirEntry.name)) {
-      continue;
+  const response = await fetch(`${BASE_URL}/`);
+  const rawText = await response.text();
+  const row = rawText.split("\n");
+  row.forEach((x) => {
+    if (!x) {
+      return;
     }
-    const birthtime = Deno.statSync(`files/${dirEntry.name}`).birthtime ||
-      new Date();
+
+    const { name, date } = getParts(x);
+    if (SKIP_LIST.includes(name)) {
+      return;
+    }
 
     albums.push({
-      name: dirEntry.name,
-      creationDate: birthtime,
+      name,
+      creationDate: new Date(date),
     });
-  }
+  });
 
   return albums.sort((a, b) => {
     return a.creationDate > b.creationDate ? -1 : 1;
@@ -29,57 +50,36 @@ async function listAlbums() {
 
 type Photo = {
   url: string;
-  width: number;
-  height: number;
   alt: string;
-}
+};
 
 async function listPhotos(albumNameRaw: string) {
   const albumName = decodeURIComponent(albumNameRaw);
 
   const photos: Photo[] = [];
-  for await (const dirEntry of Deno.readDir(`files/${albumName}`)) {
-    if (SKIP_LIST.includes(dirEntry.name)) {
-      continue;
+
+  const response = await fetch(`${BASE_URL}/${albumName}`);
+  const hej = await response.text();
+
+  const row = hej.split("\n");
+  row.forEach((x, i) => {
+    if (!x) {
+      return;
     }
 
-    const imageAsText = await getPhoto(albumName, dirEntry.name);
-    const image = await Image.decode(imageAsText);
+    const { url, name, isDir, date } = getParts(x);
+    console.log(i, url, name, isDir, date);
+
+    if (SKIP_LIST.includes(name)) {
+      return;
+    }
 
     photos.push({
-      url: dirEntry.name,
-      width: image.width,
-      height: image.height,
-      alt: dirEntry.name.split('.')[0] || '',
+      url: `${BASE_URL}/${encodeURIComponent(albumName)}/${name}`,
+      alt: name,
     });
-  }
+  });
   return photos;
-}
-
-
-
-const photoCache: Record<string, Uint8Array> = {}
-
-async function getPhoto(albumNameRaw: string, photoNameRaw: string) {
-  const albumName = decodeURIComponent(albumNameRaw);
-  const photoName = photoNameRaw.replaceAll("%20", " ");
-
-  const cacheKey = `${albumName}-${photoName}`;
-  const cache = photoCache[cacheKey]
-  if (cache) {
-    return cache;
-  }
-
-  const imageAsText = await Deno.readFile(`files/${albumName}/${photoName}`);
-
-  const image = await Image.decode(imageAsText);
-
-  const resizedImage = image.resize(image.width / 3, Image.RESIZE_AUTO);
-  const encodedJpeg = await resizedImage.encodeJPEG(85);
-
-  photoCache[cacheKey] = encodedJpeg;
-
-  return encodedJpeg;
 }
 
 try {
@@ -88,7 +88,6 @@ try {
     (async () => {
       try {
         for await (const { request, respondWith } of Deno.serveHttp(conn)) {
-
           const headers = new Headers();
           console.log(
             `${request.method} ${request.url}`,
@@ -147,54 +146,6 @@ try {
                   new Response("no album with that name", {
                     headers,
                     status: 404,
-                  }),
-                );
-              }
-              continue;
-            }
-
-            case "photo": {
-              const album = path[2];
-              if (!album) {
-                await respondWith(
-                  new Response("no album name in path", {
-                    headers,
-                    status: 400,
-                  }),
-                );
-                continue;
-              }
-              const photo = path[3];
-              if (!photo) {
-                await respondWith(
-                  new Response("no photo name in path", {
-                    headers,
-                    status: 400,
-                  }),
-                );
-                continue;
-              }
-
-              try {
-                const img = await getPhoto(album, photo);
-
-                const photoParts = photo.split(".");
-                const imageType = photoParts[photoParts.length - 1];
-                headers.set("content-type", `image/${imageType}`);
-                headers.set("cache-control", "max-age=31536000");
-
-                await respondWith(
-                  new Response(img, {
-                    headers,
-                    status: 200,
-                  }),
-                );
-              } catch (error) {
-                console.log("error", error);
-                await respondWith(
-                  new Response(error.message, {
-                    headers,
-                    status: 500,
                   }),
                 );
               }
