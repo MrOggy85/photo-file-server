@@ -67,15 +67,16 @@ async function listPhotos(albumNameRaw: string) {
       return;
     }
 
-    const { url, name, isDir, date } = getParts(x);
-    console.log(i, url, name, isDir, date);
+    const { name } = getParts(x);
 
     if (SKIP_LIST.includes(name)) {
       return;
     }
 
     photos.push({
-      url: `${BASE_URL}/${encodeURIComponent(albumName)}/${name}`,
+      url: `${BASE_URL}/${encodeURIComponent(albumName)}/${
+        encodeURIComponent(name)
+      }`,
       alt: name,
     });
   });
