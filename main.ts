@@ -1,4 +1,4 @@
-const SKIP_LIST = [".DS_Store", ".stfolder", ".stfolder/"];
+const SKIP_LIST = [".DS_Store", ".stfolder", ".stfolder/", ".jpg.gz"];
 
 const BASE_URL = "https://photo-blog.oskarlindgren.se";
 
