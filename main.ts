@@ -66,6 +66,9 @@ async function listPhotos(albumNameRaw: string) {
     if (!x) {
       return;
     }
+    if (SKIP_LIST.includes(x)) {
+      return;
+    }
 
     const { name } = getParts(x);
 
