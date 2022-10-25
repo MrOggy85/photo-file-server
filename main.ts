@@ -62,17 +62,14 @@ async function listPhotos(albumNameRaw: string) {
   const hej = await response.text();
 
   const row = hej.split("\n");
-  row.forEach((x, i) => {
+  row.forEach((x) => {
     if (!x) {
-      return;
-    }
-    if (SKIP_LIST.includes(x)) {
       return;
     }
 
     const { name } = getParts(x);
 
-    if (SKIP_LIST.includes(name)) {
+    if (SKIP_LIST.some(skipText => name.includes(skipText))) {
       return;
     }
 
