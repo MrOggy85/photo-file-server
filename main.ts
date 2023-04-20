@@ -51,6 +51,7 @@ async function listAlbums() {
 type Photo = {
   url: string;
   alt: string;
+  creationDate: Date;
 };
 
 async function listPhotos(albumNameRaw: string) {
@@ -60,14 +61,13 @@ async function listPhotos(albumNameRaw: string) {
 
   const response = await fetch(`${BASE_URL}/${albumName}`);
   const hej = await response.text();
-
   const row = hej.split("\n");
   row.forEach((x) => {
     if (!x) {
       return;
     }
 
-    const { name } = getParts(x);
+    const { name, date } = getParts(x);
 
     if (SKIP_LIST.some(skipText => name.includes(skipText))) {
       return;
@@ -78,9 +78,13 @@ async function listPhotos(albumNameRaw: string) {
         encodeURIComponent(name)
       }`,
       alt: name,
+      creationDate: new Date(date),
     });
   });
-  return photos;
+
+  return photos.sort((a, b) => {
+    return a.creationDate > b.creationDate ? -1 : 1;
+  })
 }
 
 try {
